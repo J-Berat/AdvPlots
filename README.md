@@ -6,7 +6,7 @@ AdvPlots is a lightweight Julia package that bundles ready‑to‑use plotting h
 
 ```bash
 cd AdvPlots
-julia --project=. deps.jl           # installs declared dependencies
+julia --project=. deps.jl           # installs recorded dependencies via Pkg.instantiate()
 ```
 
 To run the test suite and verify the environment:
