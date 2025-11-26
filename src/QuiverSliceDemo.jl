@@ -60,6 +60,39 @@ function activate_backend!(backend::Symbol = :auto)::Symbol
 end
 
 #-------------- API --------------
+"""
+    quiver_field_makie(x, y, u, v; kwargs...)
+
+Draw a 2D quiver plot using Makie from positions (`x`, `y`) and vector
+components (`u`, `v`). Axes are shown in the same units as the inputs; set
+`xlabel` and `ylabel` accordingly.
+
+Keyword arguments
+=================
+  - `xlabel="x"`, `ylabel="y"`: axis labels with units if applicable.
+  - `color=nothing`: color values per vector; defaults to the vector magnitude
+    `hypot.(u, v)` when `nothing`.
+  - `colormap=:viridis`, `clims=nothing`: colormap and optional fixed limits for
+    coloring.
+  - `normalize=false`, `lengthscale=:auto`: control vector scaling. Set
+    `normalize=true` to draw arrows with identical lengths, or provide a
+    `lengthscale` in axis units (auto uses the median spatial spacing).
+  - `outfile="quiver.png"`: path where the figure is saved; set to `nothing` to
+    skip writing to disk.
+  - `colorbar_label="color"`, `colorbarwidth=20`: label and width of the
+    accompanying colorbar.
+
+Example
+=======
+```julia
+x = collect(range(-1, 1, length=20))
+y = collect(range(-1, 1, length=20))
+u = @. -y
+v = @. x
+quiver_field_makie(x, y, u, v; xlabel="x [m]", ylabel="y [m]",
+                   colorbar_label="|v|", outfile=nothing)
+```
+"""
 function quiver_field_makie(x::AbstractVector, y::AbstractVector,
                             u::AbstractVector, v::AbstractVector;
                             xlabel::AbstractString="x",
@@ -76,7 +109,7 @@ function quiver_field_makie(x::AbstractVector, y::AbstractVector,
                             showfig::Bool=true,
                             outfile::Union{Nothing,AbstractString}="quiver.png",
                             figsize::Tuple{Int,Int}=(900, 700),
-                            colorbarlabel::AbstractString="color",
+                            colorbar_label::AbstractString="color",
                             colorbarwidth::Real=20)
 
     backend_used = activate_backend!(backend)
@@ -113,7 +146,7 @@ function quiver_field_makie(x::AbstractVector, y::AbstractVector,
     # Always LaTeX
     x_lbl  = _L(xlabel)
     y_lbl  = _L(ylabel)
-    cb_lbl = _L(colorbarlabel)
+    cb_lbl = _L(colorbar_label)
     tickfmt = _latex_tickformat()
 
     pts  = Makie.Point2f.(xv, yv)
@@ -237,7 +270,7 @@ function quiver_slice_from_cubes(Bx::AbstractArray{<:Real,3},
         showfig      = showfig,
         outfile      = outpath,
         figsize      = figsize,
-        colorbarlabel= "color",
+        colorbar_label= "color",
         colorbarwidth= colorbarwidth,
     )
 end

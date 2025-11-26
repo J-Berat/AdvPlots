@@ -30,6 +30,40 @@ function plot_isotherms!(ax, x_data, T_values, labels, colors, y_max; percentage
     end
 end
 
+"""
+    phase_diagram(x_data, y_data; kwargs...)
+
+Trace a 2D phase diagram from paired samples (e.g. number density `x_data` and
+pressure `y_data`). By default the data are log₁₀-transformed (`apply_log=true`),
+which requires strictly positive inputs and produces axes labeled in log-base-10
+units.
+
+Keyword arguments
+=================
+  - `n_bins=500`: number of bins per axis for the heatmap aggregation.
+  - `xlabel=""` / `ylabel=""`: axis labels; when `apply_log=true` they should
+    typically include log-base-10 units, e.g. `"log₁₀ n [cm⁻³]"`.
+  - `colorbar_label=""`: annotation for the colorbar; hidden when empty.
+  - `apply_log=true`: apply log₁₀ to inputs before binning. Set `false` to keep
+    linear axes.
+  - `show_isotherms=true` / `T_values=nothing`: overlay reference isotherms
+    (expects Kelvin) when temperature values are provided.
+  - `show_Tequ=true`: plots the thermal equilibrium curve using `tequilibrium`.
+  - `colormap=cgrad([...])`: colormap applied to the heatmap.
+  - `percentage=0.35`: relative position used to place isotherm labels.
+  - `outfile=nothing`: optional output path; when provided, the figure is saved
+    via `save(outfile, fig)`.
+
+Examples
+========
+```julia
+using AdvPlots
+n = 10 .^ randn(5_000)
+P = n .* 10 .^ randn(5_000)
+phase_diagram(n, P; xlabel="log₁₀ n [cm⁻³]", ylabel="log₁₀ P [K cm⁻³]",
+              colorbar_label="counts", outfile="phase.png")
+```
+"""
 function phase_diagram(x_data, y_data;
     T_values = nothing,
     n_bins = 500,
@@ -42,7 +76,7 @@ function phase_diagram(x_data, y_data;
     show_isotherms = true,
     show_Tequ = true,
     colormap = cgrad([:white, "#c7e9b4", "#7fcdbb", "#41b6c4", "#253494"], [0.0, 0.25, 0.5, 0.75, 1.0]),
-    savepath = nothing)
+    outfile = nothing)
 
     with_theme(theme_latexfonts()) do
 
@@ -143,14 +177,26 @@ function phase_diagram(x_data, y_data;
         leg.framevisible = false
     
         # Save if needed
-        if savepath !== nothing
-            save(savepath, fig)
+        if outfile !== nothing
+            save(outfile, fig)
         end
     
         return fig
     end
 end
 
+"""
+    phase_diagram!(ax, x_data, y_data; kwargs...)
+
+Plot the same phase diagram heatmap onto an existing Makie `Axis` `ax`. As in
+`phase_diagram`, the default `apply_log=true` applies log₁₀ to the data (valid
+only for positive inputs), so labels for `ax` should reflect log-base-10 units.
+Counts are transformed with `log10(counts + 1)` to emphasize sparse regions.
+
+Keyword arguments mirror `phase_diagram` but reuse the provided axis; notable
+ones include `n_bins` (default `500`), `colormap`, `percentage` for isotherm
+label placement, and toggles for `show_isotherms` / `show_Tequ`.
+"""
 function phase_diagram!(ax::Axis, x_data, y_data;
     T_values = nothing,
     n_bins = 500,
@@ -205,15 +251,36 @@ function phase_diagram!(ax::Axis, x_data, y_data;
     return hm
 end
 
+"""
+    hist2D(x_data, y_data; kwargs...)
+
+Simple helper to draw a 2D histogram as a heatmap. `apply_log` defaults to
+`false`; set it to `true` to convert both axes to log₁₀ (inputs must be
+positive). The heatmap values themselves use either raw counts or
+`log10(counts + 1)` depending on `apply_log`.
+
+Key options: `n_bins` (default `100`), `xlabel`/`ylabel` to state units, and
+`colorbar_label` to annotate the legend. Use `outfile` to save the figure (no
+file is written when it is `nothing`).
+
+Example
+=======
+```julia
+x = rand(10_000);
+y = rand(10_000);
+hist2D(x, y; xlabel="x [a.u.]", ylabel="y [a.u.]", colorbar_label="counts",
+       outfile="hist2d.png")
+```
+"""
 function hist2D(x_data, y_data;
-    n_bins = 100,
-    apply_log = false,
-    title = "",
+      n_bins = 100,
+      apply_log = false,
+      title = "",
     xlabel = "",
     ylabel = "",
     colorbar_label = "",
     colormap = cgrad([:white, "#c7e9b4", "#7fcdbb", "#41b6c4", "#253494"], [0.0, 0.25, 0.5, 0.75, 1.0]),
-    savepath = nothing)
+    outfile = nothing)
 
     fig = Figure(backgroundcolor = :white, resolution = (800, 600))
 
@@ -265,8 +332,8 @@ function hist2D(x_data, y_data;
 
     colgap!(fig.layout, 5)
 
-    if savepath !== nothing
-        save(savepath, fig)
+    if outfile !== nothing
+        save(outfile, fig)
     end
 
     return fig
