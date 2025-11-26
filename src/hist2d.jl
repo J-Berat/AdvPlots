@@ -1,4 +1,3 @@
-\
 # Plotting implementation included into AdvPlots module.
 
 function hist2d(x::AbstractVector, y::AbstractVector;
@@ -22,7 +21,8 @@ function hist2d(x::AbstractVector, y::AbstractVector;
     # Clean
     mask = .!ismissing.(x) .& .!ismissing.(y)
     xv, yv = Float64.(x[mask]), Float64.(y[mask])
-    fin = isfinite.(xv) .& isfinite.(yv); xv, yv = xv[fin], yv[fin]
+    fin = isfinite.(xv) .& isfinite.(yv)
+    xv, yv = xv[fin], yv[fin]
     isempty(xv) && throw(ArgumentError("no valid data"))
 
     # Ranges
@@ -39,7 +39,8 @@ function hist2d(x::AbstractVector, y::AbstractVector;
 
     # Normalization
     if norm == :probability
-        s = sum(w); s > 0 && (w ./= s)
+        s = sum(w)
+        s > 0 && (w ./= s)
     elseif norm == :pdf
         s = sum(w)
         if s > 0
@@ -92,10 +93,11 @@ function hist2d(x::AbstractVector, y::AbstractVector;
     # Output "<x>_vs_<y>/<x>_vs_<y>.pdf"
     base = string(_sanitize(xname), "_vs_", _sanitize(yname))
     dir  = isnothing(outdir) ? base : String(outdir)
-    isdir(dir) or mkpath(dir)
+    isdir(dir) || mkpath(dir)
     fname = isnothing(outfile) ? (base * ".pdf") : String(outfile)
-    if not endswith(fname.lower(), ".pdf"):
-        fname += ".pdf"
+    if !endswith(lowercase(fname), ".pdf")
+        fname *= ".pdf"
+    end
     fullpath = joinpath(dir, fname)
 
     # Save with Makie
