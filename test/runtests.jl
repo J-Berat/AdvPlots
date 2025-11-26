@@ -23,6 +23,32 @@ using AdvPlots
     @test_throws ArgumentError AdvPlots.hist2d(x, y; xname="x", yname="y", scale=:log10, clims=(0.0, 1e-3))
 end
 
+@testset "validation errors" begin
+    err = try
+        AdvPlots.hist2d([1.0, 2.0], [1.0, 2.0]; outdir="")
+    catch e
+        e
+    end
+    @test err isa ArgumentError
+    @test occursin("outdir", sprint(showerror, err))
+
+    err_log = try
+        AdvPlots.hist2D([0.0, 1.0], [1.0, 2.0]; apply_log=true)
+    catch e
+        e
+    end
+    @test err_log isa ArgumentError
+    @test occursin("x_data", sprint(showerror, err_log))
+
+    err_phase = try
+        phase_diagram([-1.0, 2.0], [1.0, 2.0]; apply_log=true)
+    catch e
+        e
+    end
+    @test err_phase isa ArgumentError
+    @test occursin("strictly positive", sprint(showerror, err_phase))
+end
+
 @testset "hist2d validation" begin
     x = [1.0, 2.0, 3.0]
     y = [1.0, 2.0]

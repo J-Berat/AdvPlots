@@ -3,6 +3,7 @@ module QuiverSliceDemo
 using Statistics
 import Makie
 using LaTeXStrings
+using ..AdvPlots: _validate_outstring, _validate_positive_int
 
 #-------------- helpers --------------
 @inline _L(s) = s isa LaTeXString ? s : LaTeXString(String(s))
@@ -174,8 +175,11 @@ function quiver_field_makie(x::AbstractVector, y::AbstractVector,
 
     showfig && display(fig)
     if outfile !== nothing
-        Makie.save(outfile, fig)
-        println("✅ saved: ", abspath(outfile))
+        path = _validate_outstring("outfile", String(outfile))
+        outdir = dirname(path)
+        !isempty(outdir) && mkpath(outdir)
+        Makie.save(path, fig)
+        println("✅ saved: ", abspath(path))
     end
 
     return (; fig, ax, plt, lengthscale = ls, backend = backend_used)
@@ -207,7 +211,7 @@ function quiver_slice_from_cubes(Bx::AbstractArray{<:Real,3},
     size(Bx) == size(By) == size(Bz) || throw(ArgumentError("Bx, By, Bz must match"))
     Nx, Ny, Nz = size(Bx)
     length(x) == Nx && length(y) == Ny && length(z) == Nz || throw(ArgumentError("x/y/z sizes mismatch"))
-    every ≥ 1 || throw(ArgumentError("every ≥ 1"))
+    _validate_positive_int("every", every)
 
     idx = index !== nothing ? index :
           coord !== nothing ? (axis === :x ? argmin(abs.(x .- coord)) :
@@ -252,8 +256,11 @@ function quiver_slice_from_cubes(Bx::AbstractArray{<:Real,3},
                colorby === :norm3d ? sqrt.(uv .^ 2 .+ vv .^ 2 .+ wv .^ 2) :
                throw(ArgumentError("colorby must be :mag, :w, or :norm3d"))
 
-    outpath = outfile === nothing ? nothing :
-              savedir === nothing ? outfile : joinpath(savedir, outfile)
+    outfile_norm = outfile === nothing ? nothing : _validate_outstring("outfile", String(outfile))
+    savedir_norm = savedir === nothing ? nothing : _validate_outstring("savedir", String(savedir))
+
+    outpath = outfile_norm === nothing ? nothing :
+              savedir_norm === nothing ? outfile_norm : joinpath(savedir_norm, outfile_norm)
 
     return quiver_field_makie(xv, yv, uv, vv;
         xlabel       = xlabel,

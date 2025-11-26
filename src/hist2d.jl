@@ -1,5 +1,33 @@
 # Plotting implementation included into AdvPlots module.
+"""
+    hist2d(x, y; kwargs...)
 
+Compute a 2D histogram of paired samples `x` and `y` and display it as a Makie
+heatmap. Axes labels are LaTeX-rendered from `xname`/`yname` and the colorbar
+reflects either raw counts, probabilities (`norm=:probability`), or density
+(`norm=:pdf`).
+
+Preconditions and safety checks
+===============================
+  * `length(x) == length(y)` and both arrays contain at least one finite, non-
+    missing pair after cleaning.
+  * `nbins` must be strictly positive in each dimension.
+  * `xrange`/`yrange`, when provided, must be finite tuples with the first value
+    smaller than the second.
+  * When `scale=:log10`, `clims` (if set) must be positive; `norm=:pdf` requires
+    non-zero bin area.
+  * `outdir`/`outfile` cannot be empty strings; output is saved as PDF by
+    default.
+
+Example
+=======
+```julia
+x = randn(1_000)
+y = randn(1_000) .+ 0.5
+hist2d(x, y; xname="x", yname="y", nbins=(60, 60), scale=:log10,
+       outdir="x_vs_y")
+```
+"""
 function hist2d(x::AbstractVector, y::AbstractVector;
                 xname::AbstractString="var1", yname::AbstractString="var2",
                 nbins::Tuple{Int,Int}=(40,40),
@@ -14,7 +42,7 @@ function hist2d(x::AbstractVector, y::AbstractVector;
                 size::Tuple{Int,Int}=(900,700))
 
     length(x) == length(y) || throw(ArgumentError("x and y must have the same length"))
-    all(>(0), nbins) || throw(ArgumentError("nbins must be > 0"))
+    _validate_nbins_tuple(nbins)
     norm  in (:none, :probability, :pdf) || throw(ArgumentError("invalid norm"))
     scale in (:linear, :log10)          || throw(ArgumentError("invalid scale"))
 
@@ -28,8 +56,8 @@ function hist2d(x::AbstractVector, y::AbstractVector;
     # Ranges
     xr = isnothing(xrange) ? (minimum(xv), maximum(xv)) : Tuple(xrange)
     yr = isnothing(yrange) ? (minimum(yv), maximum(yv)) : Tuple(yrange)
-    xr[1] < xr[2] || throw(ArgumentError("invalid xrange"))
-    yr[1] < yr[2] || throw(ArgumentError("invalid yrange"))
+    _validate_range_tuple(xr, "xrange")
+    _validate_range_tuple(yr, "yrange")
 
     # Histogram
     xedges = collect(range(xr[1], xr[2], length=nbins[1]+1))
@@ -92,9 +120,9 @@ function hist2d(x::AbstractVector, y::AbstractVector;
 
     # Output "<x>_vs_<y>/<x>_vs_<y>.pdf"
     base = string(_sanitize(xname), "_vs_", _sanitize(yname))
-    dir  = isnothing(outdir) ? base : String(outdir)
+    dir  = isnothing(outdir) ? base : _validate_outstring("outdir", String(outdir))
     isdir(dir) || mkpath(dir)
-    fname = isnothing(outfile) ? (base * ".pdf") : String(outfile)
+    fname = isnothing(outfile) ? (base * ".pdf") : _validate_outstring("outfile", String(outfile))
     if !endswith(lowercase(fname), ".pdf")
         fname *= ".pdf"
     end

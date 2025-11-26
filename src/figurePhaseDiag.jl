@@ -40,19 +40,21 @@ units.
 
 Keyword arguments
 =================
-  - `n_bins=500`: number of bins per axis for the heatmap aggregation.
+  - `n_bins=500`: number of bins per axis for the heatmap aggregation (must be
+    positive).
   - `xlabel=""` / `ylabel=""`: axis labels; when `apply_log=true` they should
     typically include log-base-10 units, e.g. `"log₁₀ n [cm⁻³]"`.
   - `colorbar_label=""`: annotation for the colorbar; hidden when empty.
-  - `apply_log=true`: apply log₁₀ to inputs before binning. Set `false` to keep
-    linear axes.
+  - `apply_log=true`: apply log₁₀ to inputs before binning (requires strictly
+    positive, finite inputs). Set `false` to keep linear axes.
   - `show_isotherms=true` / `T_values=nothing`: overlay reference isotherms
     (expects Kelvin) when temperature values are provided.
   - `show_Tequ=true`: plots the thermal equilibrium curve using `tequilibrium`.
   - `colormap=cgrad([...])`: colormap applied to the heatmap.
   - `percentage=0.35`: relative position used to place isotherm labels.
-  - `outfile=nothing`: optional output path; when provided, the figure is saved
-    via `save(outfile, fig)`.
+  - `outfile=nothing` / `savepath=nothing`: optional output path; when provided,
+    the figure is saved via `save`. The path cannot be empty and parent
+    directories are created automatically.
 
 Examples
 ========
@@ -76,16 +78,17 @@ function phase_diagram(x_data, y_data;
     show_isotherms = true,
     show_Tequ = true,
     colormap = cgrad([:white, "#c7e9b4", "#7fcdbb", "#41b6c4", "#253494"], [0.0, 0.25, 0.5, 0.75, 1.0]),
-    outfile = nothing)
+    outfile = nothing,
+    savepath = nothing)
 
     with_theme(theme_latexfonts()) do
 
         fig = Figure(backgroundcolor = :white, resolution = (800, 600))
-    
+
         # Safety check for log scaling
-        if apply_log && (any(x_data .<= 0) || any(y_data .<= 0))
-            error("x_data and y_data must be strictly positive before log transformation.")
-        end
+        _validate_positive_int("n_bins", n_bins)
+        apply_log && (_ensure_positive_for_log("x_data", x_data);
+                      _ensure_positive_for_log("y_data", y_data))
     
         # Log-transform if needed
         if apply_log
@@ -177,10 +180,14 @@ function phase_diagram(x_data, y_data;
         leg.framevisible = false
     
         # Save if needed
-        if outfile !== nothing
-            save(outfile, fig)
+        save_target = savepath === nothing ? outfile : savepath
+        if save_target !== nothing
+            target = _validate_outstring("outfile", String(save_target))
+            dir = dirname(target)
+            !isempty(dir) && mkpath(dir)
+            save(target, fig)
         end
-    
+
         return fig
     end
 end
@@ -190,7 +197,8 @@ end
 
 Plot the same phase diagram heatmap onto an existing Makie `Axis` `ax`. As in
 `phase_diagram`, the default `apply_log=true` applies log₁₀ to the data (valid
-only for positive inputs), so labels for `ax` should reflect log-base-10 units.
+only for positive, finite inputs), so labels for `ax` should reflect log-base-10
+units.
 Counts are transformed with `log10(counts + 1)` to emphasize sparse regions.
 
 Keyword arguments mirror `phase_diagram` but reuse the provided axis; notable
@@ -206,9 +214,9 @@ function phase_diagram!(ax::Axis, x_data, y_data;
     show_Tequ = true,
     colormap = cgrad([:white, "#c7e9b4", "#7fcdbb", "#41b6c4", "#253494"], [0.0, 0.25, 0.5, 0.75, 1.0])
 )
-    if apply_log && (any(x_data .<= 0) || any(y_data .<= 0))
-        error("x_data and y_data must be strictly positive before log transformation.")
-    end
+    _validate_positive_int("n_bins", n_bins)
+    apply_log && (_ensure_positive_for_log("x_data", x_data);
+                  _ensure_positive_for_log("y_data", y_data))
 
     if apply_log
         x_data = log10.(x_data)
@@ -255,13 +263,14 @@ end
     hist2D(x_data, y_data; kwargs...)
 
 Simple helper to draw a 2D histogram as a heatmap. `apply_log` defaults to
-`false`; set it to `true` to convert both axes to log₁₀ (inputs must be
-positive). The heatmap values themselves use either raw counts or
+`false`; set it to `true` to convert both axes to log₁₀ (requires strictly
+positive, finite inputs). The heatmap values themselves use either raw counts or
 `log10(counts + 1)` depending on `apply_log`.
 
-Key options: `n_bins` (default `100`), `xlabel`/`ylabel` to state units, and
-`colorbar_label` to annotate the legend. Use `outfile` to save the figure (no
-file is written when it is `nothing`).
+Key options: `n_bins` (default `100`, must be positive), `xlabel`/`ylabel` to
+state units, and `colorbar_label` to annotate the legend. Use `outfile` to save
+the figure (no file is written when it is `nothing`); the path cannot be empty
+and parent directories are created automatically.
 
 Example
 =======
@@ -284,9 +293,9 @@ function hist2D(x_data, y_data;
 
     fig = Figure(backgroundcolor = :white, resolution = (800, 600))
 
-    if apply_log && (any(x_data .<= 0) || any(y_data .<= 0))
-        error("x_data and y_data must be strictly positive before log transformation.")
-    end
+    _validate_positive_int("n_bins", n_bins)
+    apply_log && (_ensure_positive_for_log("x_data", x_data);
+                  _ensure_positive_for_log("y_data", y_data))
 
     if apply_log
         x_data = log10.(x_data)
@@ -333,7 +342,10 @@ function hist2D(x_data, y_data;
     colgap!(fig.layout, 5)
 
     if outfile !== nothing
-        save(outfile, fig)
+        target = _validate_outstring("outfile", String(outfile))
+        dir = dirname(target)
+        !isempty(dir) && mkpath(dir)
+        save(target, fig)
     end
 
     return fig

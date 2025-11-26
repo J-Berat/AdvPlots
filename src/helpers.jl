@@ -1,5 +1,31 @@
 # Helpers included into AdvPlots module.
 
+_ensure_positive_for_log(name::AbstractString, values) = begin
+    any((!isfinite(v) || v <= 0) for v in values) &&
+        throw(ArgumentError("$name must be strictly positive for log scaling"))
+end
+
+_validate_range_tuple(r::Tuple{<:Real,<:Real}, label::AbstractString) = begin
+    (!all(isfinite, r) || r[1] >= r[2]) &&
+        throw(ArgumentError("$label must be finite with the first element smaller than the second"))
+    r
+end
+
+_validate_nbins_tuple(nbins::Tuple{Int,Int}) = begin
+    all(>(0), nbins) || throw(ArgumentError("nbins must be strictly positive"))
+    nbins
+end
+
+_validate_positive_int(label::AbstractString, value::Integer) = begin
+    value > 0 || throw(ArgumentError("$label must be a positive integer"))
+    value
+end
+
+_validate_outstring(label::AbstractString, path::AbstractString) = begin
+    isempty(strip(path)) && throw(ArgumentError("$label cannot be empty"))
+    path
+end
+
 _safe_clims(cr::Tuple{<:Real,<:Real}) = cr[1] == cr[2] ? begin
     δ = max(abs(cr[1]) * 1e-6, 1e-12)
     (cr[1] - δ, cr[2] + δ)
