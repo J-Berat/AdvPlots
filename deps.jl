@@ -7,6 +7,7 @@ Pkg.add([
     "LaTeXStrings",
     "MathTeXEngine",
     "Distributions",
+    "Statistics",
 ])
 Pkg.resolve()
 Pkg.precompile()
