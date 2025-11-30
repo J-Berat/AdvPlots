@@ -83,15 +83,12 @@ function hist2d(x::AbstractVector, y::AbstractVector;
         minpos = minimum(w[w .> 0]; init=Inf)
         eps = isfinite(minpos) ? minpos * 1e-3 : 1e-12
         wplot = log10.(w .+ eps)
-        cr = isnothing(clims) ? extrema(wplot) :
-             (all(>(0), clims) ? (log10(clims[1]), log10(clims[2])) :
-              throw(ArgumentError("clims must be > 0 for :log10")))
-        cr = _safe_clims(cr)
+        cr = _process_clims(clims, scale, extrema(wplot))
         cbar_ticks = _ticks_log10(cr)
         cbar_label = LaTeXStrings.latexstring("\\mathrm{count}\\;\\text{or}\\;\\mathrm{density}\\;(\\log_{10})")
     else
         wplot = w
-        cr = _safe_clims(isnothing(clims) ? extrema(w) : Tuple(clims))
+        cr = _process_clims(clims, scale, extrema(w))
         cbar_ticks = _ticks_lin(cr...)
         cbar_label = LaTeXStrings.latexstring("\\mathrm{count}\\;\\mathrm{density}")
     end
