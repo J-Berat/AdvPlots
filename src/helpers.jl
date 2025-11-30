@@ -31,6 +31,26 @@ _safe_clims(cr::Tuple{<:Real,<:Real}) = cr[1] == cr[2] ? begin
     (cr[1] - δ, cr[2] + δ)
 end : cr
 
+# Handle color limits depending on the requested scale. When `scale` is
+# logarithmic, user-provided `clims` must be positive, but automatically
+# computed ranges (when `clims === nothing`) are allowed to include the
+# logarithm of small positive values.
+function _process_clims(clims::Union{Nothing,Tuple{<:Real,<:Real}},
+                        scale::Symbol,
+                        data_range::Tuple{<:Real,<:Real})
+    if scale == :log10
+        if isnothing(clims)
+            return _safe_clims(data_range)
+        end
+
+        all(>(0), clims) || throw(ArgumentError("clims must be > 0 for :log10"))
+        return _safe_clims((log10(clims[1]), log10(clims[2])))
+    end
+
+    return _safe_clims(isnothing(clims) ? data_range : Tuple(clims))
+end
+
+
 _sanitize(s::AbstractString) = begin
     t = replace(s, r"[^\w\-]+" => "_")
     t = replace(t, r"_+" => "_")
