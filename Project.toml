@@ -1,7 +1,7 @@
 name = "AdvPlots"
 uuid = "4b07f121-2307-42c0-8344-6814ace90e04"
 version = "0.1.0"
-authors = ["You <you@example.com>"]
+authors = ["Jack Berat]
 
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
@@ -18,9 +18,3 @@ LaTeXStrings = "1.4.0"
 MathTeXEngine = "0.6.7"
 StatsBase = "0.34.8"
 julia = "1.9"
-
-[extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["Test"]
